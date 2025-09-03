@@ -213,7 +213,7 @@ module cedra_names::config {
         sign: &signer, addr: address
     ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
-        cedra_account::assert_account_is_registered_for_apt(addr);
+        cedra_account::assert_account_is_registered_for_cedra(addr);
 
         set_v1(@cedra_names, config_key_fund_destination_address(), &addr)
     }

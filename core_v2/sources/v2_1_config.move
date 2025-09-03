@@ -185,7 +185,7 @@ module cedra_names_v2_1::v2_1_config {
         sign: &signer, addr: address
     ) acquires Config {
         assert_signer_is_admin(sign);
-        cedra_account::assert_account_is_registered_for_apt(addr);
+        cedra_account::assert_account_is_registered_for_cedra(addr);
         borrow_global_mut<Config>(@cedra_names_v2_1).fund_destination_address = addr
     }
 
