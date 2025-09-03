@@ -1,4 +1,4 @@
-module aptos_names::time_helper {
+module cedra_names::time_helper {
 
     const SECONDS_PER_MINUTE: u64 = 60;
     const SECONDS_PER_HOUR: u64 = 60 * 60;
@@ -34,19 +34,36 @@ module aptos_names::time_helper {
         SECONDS_PER_YEAR * years
     }
 
-
     #[test]
-    fun test_time_conversion()
-    {
+    fun test_time_conversion() {
         assert!(minutes_to_seconds(1) == 60, minutes_to_seconds(1));
-        assert!(minutes_to_seconds(60) == hours_to_seconds(1), minutes_to_seconds(1));
+        assert!(
+            minutes_to_seconds(60) == hours_to_seconds(1),
+            minutes_to_seconds(1)
+        );
 
-        assert!(days_to_seconds(1) == minutes_to_seconds(1) * 60 * 24, days_to_seconds(1));
-        assert!(weeks_to_seconds(1) == days_to_seconds(1) * 7, weeks_to_seconds(1));
-        assert!(hours_to_seconds(24) == days_to_seconds(1), hours_to_seconds(24));
+        assert!(
+            days_to_seconds(1) == minutes_to_seconds(1) * 60 * 24,
+            days_to_seconds(1)
+        );
+        assert!(
+            weeks_to_seconds(1) == days_to_seconds(1) * 7,
+            weeks_to_seconds(1)
+        );
+        assert!(
+            hours_to_seconds(24) == days_to_seconds(1),
+            hours_to_seconds(24)
+        );
 
-        assert!(years_to_seconds(1) == days_to_seconds(1) * 365, years_to_seconds(1));
+        assert!(
+            years_to_seconds(1) == days_to_seconds(1) * 365,
+            years_to_seconds(1)
+        );
 
-        assert!(1 == seconds_to_years(years_to_seconds(1)), seconds_to_years(years_to_seconds(1)));
+        assert!(
+            1 == seconds_to_years(years_to_seconds(1)),
+            seconds_to_years(years_to_seconds(1))
+        );
     }
 }
+

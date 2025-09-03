@@ -1,18 +1,18 @@
 [package]
-name = 'aptos_names_transfer'
+name = 'cedra_names_transfer'
 version = '1.0.0'
 
 [addresses]
-aptos_names = "_"
-aptos_names_admin = "_"
-aptos_names_funds = "_"
+cedra_names = "_"
+cedra_names_admin = "_"
+cedra_names_funds = "_"
 router_signer = "_"
 
 [dev-addresses]
-aptos_names = "0x5555000"
-aptos_names_admin = "0x5555002"
-aptos_names_funds = "0x5555003"
+cedra_names = "0x5555000"
+cedra_names_admin = "0x5555002"
+cedra_names_funds = "0x5555003"
 router_signer = "0x5555004"
 
-[dependencies.aptos_names]
+[dependencies.cedra_names]
 local = "../core"

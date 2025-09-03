@@ -27,6 +27,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-.aptos
+.cedra
 .coverage_map.mvcov
 .trace

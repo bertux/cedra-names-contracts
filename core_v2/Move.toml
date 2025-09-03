@@ -1,24 +1,24 @@
 [package]
-name = 'aptos_names_v2_1'
+name = 'cedra_names_v2_1'
 version = '1.0.0'
 
 [addresses]
-aptos_names_v2_1 = "_"
-aptos_names_admin = "_"
-aptos_names_funds = "_"
+cedra_names_v2_1 = "_"
+cedra_names_admin = "_"
+cedra_names_funds = "_"
 router_signer = "_"
 
-[dependencies.AptosFramework]
-git = 'https://github.com/aptos-labs/aptos-framework.git'
-rev = 'mainnet'
-subdir = 'aptos-framework'
+[dependencies.CedraFramework]
+git = 'https://github.com/cedra-labs/cedra-framework.git'
+rev = 'main'
+subdir = 'cedra-framework'
 
-[dependencies.AptosToken]
-git = 'https://github.com/aptos-labs/aptos-framework.git'
-rev = 'mainnet'
-subdir = 'aptos-token'
+[dependencies.CedraToken]
+git = 'https://github.com/cedra-labs/cedra-framework.git'
+rev = 'main'
+subdir = 'cedra-token'
 
-[dependencies.AptosTokenObjects]
-git = 'https://github.com/aptos-labs/aptos-framework.git'
-rev = 'mainnet'
-subdir = 'aptos-token-objects'
+[dependencies.CedraTokenObjects]
+git = 'https://github.com/cedra-labs/cedra-framework.git'
+rev = 'main'
+subdir = 'cedra-token-objects'

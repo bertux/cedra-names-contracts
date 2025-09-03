@@ -1,10 +1,10 @@
 module router::router {
-    use aptos_framework::account::SignerCapability;
-    use aptos_framework::account;
-    use aptos_framework::object;
-    use aptos_framework::timestamp;
-    use aptos_names::domains;
-    use aptos_names_v2_1::v2_1_domains;
+    use cedra_framework::account::SignerCapability;
+    use cedra_framework::account;
+    use cedra_framework::object;
+    use cedra_framework::timestamp;
+    use cedra_names::domains;
+    use cedra_names_v2_1::v2_1_domains;
     use std::error;
     use std::option::{Self, Option};
     use std::signer;
@@ -46,7 +46,7 @@ module router::router {
 
     // == OTHER CONSTANTS ==
 
-    const ROUTER_SIGNER_SEED: vector<u8> = b"ANS ROUTER";
+    const ROUTER_SIGNER_SEED: vector<u8> = b"CNS ROUTER";
     const SECONDS_PER_YEAR: u64 = 60 * 60 * 24 * 365;
     /// 2024/03/07 23:59:59
     const AUTO_RENEWAL_EXPIRATION_CUTOFF_SEC: u64 = 1709855999;
@@ -57,31 +57,34 @@ module router::router {
         pending_admin_addr: Option<address>,
         admin_addr: address,
         mode: u8,
-        signer_cap: SignerCapability,
+        signer_cap: SignerCapability
     }
 
     fun init_module(deployer: &signer) {
-        let (_, signer_cap) = account::create_resource_account(
+        let (_, signer_cap) =
+            account::create_resource_account(deployer, ROUTER_SIGNER_SEED);
+        move_to(
             deployer,
-            ROUTER_SIGNER_SEED,
+            RouterConfig {
+                pending_admin_addr: option::none(),
+                admin_addr: signer::address_of(deployer),
+                mode: MODE_V1,
+                signer_cap
+            }
         );
-        move_to(deployer, RouterConfig {
-            pending_admin_addr: option::none(),
-            admin_addr: signer::address_of(deployer),
-            mode: MODE_V1,
-            signer_cap,
-        });
     }
 
     // == ROUTER MANAGEMENT WRITE FUNCTIONS ==
 
     /// Sets the pending admin address. Caller must be the admin
     public entry fun set_pending_admin(
-        router_admin: &signer,
-        pending_admin_addr: address,
+        router_admin: &signer, pending_admin_addr: address
     ) acquires RouterConfig {
         let router_config = borrow_global_mut<RouterConfig>(@router);
-        assert!(router_config.admin_addr == signer::address_of(router_admin), error::permission_denied(ENOT_ADMIN));
+        assert!(
+            router_config.admin_addr == signer::address_of(router_admin),
+            error::permission_denied(ENOT_ADMIN)
+        );
         router_config.pending_admin_addr = option::some(pending_admin_addr);
     }
 
@@ -89,7 +92,8 @@ module router::router {
     public entry fun accept_pending_admin(pending_admin: &signer) acquires RouterConfig {
         let router_config = borrow_global_mut<RouterConfig>(@router);
         assert!(
-            router_config.pending_admin_addr == option::some(signer::address_of(pending_admin)),
+            router_config.pending_admin_addr
+                == option::some(signer::address_of(pending_admin)),
             error::permission_denied(ENOT_PENDING_ADMIN)
         );
         router_config.admin_addr = *option::borrow(&router_config.pending_admin_addr);
@@ -97,20 +101,22 @@ module router::router {
     }
 
     /// Change the router mode. See ROUTER MODE ENUMS
-    public entry fun set_mode(
-        router_admin: &signer,
-        mode: u8,
-    ) acquires RouterConfig {
+    public entry fun set_mode(router_admin: &signer, mode: u8) acquires RouterConfig {
         assert!(is_valid_mode(mode), error::invalid_argument(EINVALID_MODE));
         let router_config = borrow_global_mut<RouterConfig>(@router);
-        assert!(router_config.admin_addr == signer::address_of(router_admin), error::permission_denied(ENOT_ADMIN));
+        assert!(
+            router_config.admin_addr == signer::address_of(router_admin),
+            error::permission_denied(ENOT_ADMIN)
+        );
         router_config.mode = mode;
     }
 
     // == ROUTER MANAGEMENT READ FUNCTIONS ==
 
     inline fun get_router_signer(): &signer acquires RouterConfig {
-        &account::create_signer_with_capability(&borrow_global<RouterConfig>(@router).signer_cap)
+        &account::create_signer_with_capability(
+            &borrow_global<RouterConfig>(@router).signer_cap
+        )
     }
 
     inline fun router_signer_addr(): address acquires RouterConfig {
@@ -143,22 +149,28 @@ module router::router {
     /// If the name is registerable in v1, the name can only be registered if it is also available in v2.
     /// Else the name is registered and active in v1, then the name can only be registered if we have burned the token
     /// (sent it to the router_signer)
-    fun can_register_in_v2(domain_name: String, subdomain_name: Option<String>): bool acquires RouterConfig {
-        let registerable_in_v1 = domains::name_is_expired_past_grace(subdomain_name, domain_name);
+    fun can_register_in_v2(
+        domain_name: String, subdomain_name: Option<String>
+    ): bool acquires RouterConfig {
+        let registerable_in_v1 =
+            domains::name_is_expired_past_grace(subdomain_name, domain_name);
         if (registerable_in_v1) {
             v2_1_domains::is_name_registerable(domain_name, subdomain_name)
         } else {
-            let (is_burned, _token_id) = domains::is_token_owner(
-                router_signer_addr(),
-                subdomain_name,
-                domain_name
-            );
+            let (is_burned, _token_id) =
+                domains::is_token_owner(
+                    router_signer_addr(),
+                    subdomain_name,
+                    domain_name
+                );
             is_burned
         }
     }
 
     #[view]
-    public fun can_register(domain_name: String, subdomain_name: Option<String>): bool acquires RouterConfig {
+    public fun can_register(
+        domain_name: String, subdomain_name: Option<String>
+    ): bool acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
             domains::name_is_expired_past_grace(subdomain_name, domain_name)
@@ -180,7 +192,7 @@ module router::router {
         domain_name: String,
         registration_duration_secs: u64,
         target_addr: Option<address>,
-        to_addr: Option<address>,
+        to_addr: Option<address>
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -194,25 +206,31 @@ module router::router {
                 ((registration_duration_secs / SECONDS_PER_YEAR) as u8)
             );
         } else if (mode == MODE_V1_AND_V2) {
-            assert!(can_register_in_v2(domain_name, option::none()), error::unavailable(ENAME_NOT_AVAILABLE));
+            assert!(
+                can_register_in_v2(domain_name, option::none()),
+                error::unavailable(ENAME_NOT_AVAILABLE)
+            );
             v2_1_domains::register_domain(
                 get_router_signer(),
                 user,
                 domain_name,
-                registration_duration_secs,
+                registration_duration_secs
             );
             // Clear the name in v1
-            domains::force_clear_registration(get_router_signer(), option::none(), domain_name)
+            domains::force_clear_registration(
+                get_router_signer(), option::none(), domain_name
+            )
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
         };
 
         // Common operations that handle modes via the router
-        let target_addr_with_default = if (option::is_some(&target_addr)) {
-            *option::borrow(&target_addr)
-        } else {
-            signer::address_of(user)
-        };
+        let target_addr_with_default =
+            if (option::is_some(&target_addr)) {
+                *option::borrow(&target_addr)
+            } else {
+                signer::address_of(user)
+            };
         set_target_addr(
             user,
             domain_name,
@@ -220,7 +238,12 @@ module router::router {
             target_addr_with_default
         );
         if (option::is_some(&to_addr)) {
-            transfer_name(user, domain_name, option::none(), *option::borrow(&to_addr));
+            transfer_name(
+                user,
+                domain_name,
+                option::none(),
+                *option::borrow(&to_addr)
+            );
         };
 
         // This will set primary name and target address
@@ -229,7 +252,7 @@ module router::router {
             target_addr,
             to_addr,
             domain_name,
-            option::none(),
+            option::none()
         );
     }
 
@@ -238,14 +261,12 @@ module router::router {
         target_addr: Option<address>,
         to_addr: Option<address>,
         domain_name: String,
-        subdomain_name: Option<String>,
+        subdomain_name: Option<String>
     ) acquires RouterConfig {
         let owner_addr = signer::address_of(user);
 
         // if the owner address is not the buyer address
-        if (option::is_some(&to_addr) && to_addr != option::some(owner_addr)) {
-            return
-        };
+        if (option::is_some(&to_addr) && to_addr != option::some(owner_addr)) { return };
 
         // if the target address is not the buyer address
         if (option::is_some(&target_addr) && target_addr != option::some(owner_addr)) {
@@ -274,11 +295,16 @@ module router::router {
         expiration_policy: u8,
         transferrable: bool,
         target_addr: Option<address>,
-        to_addr: Option<address>,
+        to_addr: Option<address>
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
-            domains::register_subdomain(user, subdomain_name, domain_name, expiration_time_sec);
+            domains::register_subdomain(
+                user,
+                subdomain_name,
+                domain_name,
+                expiration_time_sec
+            );
         } else if (mode == MODE_V1_AND_V2) {
             assert!(
                 can_register_in_v2(domain_name, option::some(subdomain_name)),
@@ -289,25 +315,28 @@ module router::router {
                 user,
                 domain_name,
                 subdomain_name,
-                expiration_time_sec,
+                expiration_time_sec
             );
             v2_1_domains::set_subdomain_expiration_policy(
                 user,
                 domain_name,
                 subdomain_name,
-                expiration_policy,
+                expiration_policy
             );
-            domains::force_clear_registration(get_router_signer(), option::some(subdomain_name), domain_name)
+            domains::force_clear_registration(
+                get_router_signer(), option::some(subdomain_name), domain_name
+            )
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
         };
 
         // Common operations that handle modes via the router
-        let target_addr_with_default = if (option::is_some(&target_addr)) {
-            *option::borrow(&target_addr)
-        } else {
-            signer::address_of(user)
-        };
+        let target_addr_with_default =
+            if (option::is_some(&target_addr)) {
+                *option::borrow(&target_addr)
+            } else {
+                signer::address_of(user)
+            };
         set_target_addr(
             user,
             domain_name,
@@ -315,7 +344,12 @@ module router::router {
             target_addr_with_default
         );
         if (option::is_some(&to_addr)) {
-            transfer_name(user, domain_name, option::some(subdomain_name), *option::borrow(&to_addr));
+            transfer_name(
+                user,
+                domain_name,
+                option::some(subdomain_name),
+                *option::borrow(&to_addr)
+            );
         };
         if (mode == MODE_V1_AND_V2) {
             v2_1_domains::set_subdomain_transferability_as_domain_owner(
@@ -333,7 +367,7 @@ module router::router {
             target_addr,
             to_addr,
             domain_name,
-            option::some(subdomain_name),
+            option::some(subdomain_name)
         );
     }
 
@@ -341,9 +375,7 @@ module router::router {
 
     /// @notice Migrates a name to the current router mode
     public entry fun migrate_name(
-        user: &signer,
-        domain_name: String,
-        subdomain_name: Option<String>,
+        user: &signer, domain_name: String, subdomain_name: Option<String>
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -356,11 +388,8 @@ module router::router {
                 error::invalid_state(ENAME_ALREADY_MIGRATED)
             );
 
-            let (is_v1_owner, _token_id) = domains::is_token_owner(
-                user_addr,
-                subdomain_name,
-                domain_name,
-            );
+            let (is_v1_owner, _token_id) =
+                domains::is_token_owner(user_addr, subdomain_name, domain_name);
             assert!(is_v1_owner, error::permission_denied(ENOT_NAME_OWNER));
             assert!(
                 !domains::name_is_expired_past_grace(subdomain_name, domain_name),
@@ -369,30 +398,26 @@ module router::router {
 
             // Check primary name status
             let maybe_primary_name = domains::get_reverse_lookup(user_addr);
-            let is_primary_name = if (option::is_some(&maybe_primary_name)) {
-                let (primary_subdomain_name, primary_domain_name) = domains::get_name_record_key_v1_props(
-                    &option::extract(&mut maybe_primary_name)
-                );
-                subdomain_name == primary_subdomain_name && domain_name == primary_domain_name
-            } else {
-                false
-            };
+            let is_primary_name =
+                if (option::is_some(&maybe_primary_name)) {
+                    let (primary_subdomain_name, primary_domain_name) =
+                        domains::get_name_record_key_v1_props(
+                            &option::extract(&mut maybe_primary_name)
+                        );
+                    subdomain_name == primary_subdomain_name
+                        && domain_name == primary_domain_name
+                } else { false };
 
             // Get the v1 token info
-            let (
-                _property_version,
-                expiration_time_sec,
-                target_addr
-            ) = domains::get_name_record_v1_props_for_name(
-                subdomain_name,
-                domain_name,
-            );
-            let tokendata_id = aptos_names::token_helper::build_tokendata_id(
-                aptos_names::token_helper::get_token_signer_address(),
-                subdomain_name,
-                domain_name,
-            );
-            let token_id = aptos_names::token_helper::latest_token_id(&tokendata_id);
+            let (_property_version, expiration_time_sec, target_addr) =
+                domains::get_name_record_v1_props_for_name(subdomain_name, domain_name);
+            let tokendata_id =
+                cedra_names::token_helper::build_tokendata_id(
+                    cedra_names::token_helper::get_token_signer_address(),
+                    subdomain_name,
+                    domain_name
+                );
+            let token_id = cedra_names::token_helper::latest_token_id(&tokendata_id);
 
             // Domain must migrate before subdomain, throw error if this is a subdomain but domain has not been migrated
             if (option::is_some(&subdomain_name)) {
@@ -404,12 +429,7 @@ module router::router {
 
             // Burn by sending to `router_signer`
             let router_signer = get_router_signer();
-            aptos_token::token::direct_transfer(
-                user,
-                router_signer,
-                token_id,
-                1,
-            );
+            cedra_token::token::direct_transfer(user, router_signer, token_id, 1);
 
             // Calculate new expiration. Cases:
             // 1. Name is a subdomain. Migrate the name with the same expiration
@@ -417,33 +437,34 @@ module router::router {
             //   a. it expires before AUTO_RENEWAL_EXPIRATION_CUTOFF_SEC. Migrate the name with an extra year to its existing expiration
             //   b. it expires after AUTO_RENEWAL_EXPIRATION_CUTOFF_SEC. Migrate the name with the same expiration
             let now = timestamp::now_seconds();
-            let new_expiration_time_sec = if (option::is_some(&subdomain_name)) {
-                expiration_time_sec
-            } else {
-                if (expiration_time_sec <= AUTO_RENEWAL_EXPIRATION_CUTOFF_SEC) {
-                    expiration_time_sec + SECONDS_PER_YEAR
-                } else {
+            let new_expiration_time_sec =
+                if (option::is_some(&subdomain_name)) {
                     expiration_time_sec
-                }
-            };
+                } else {
+                    if (expiration_time_sec <= AUTO_RENEWAL_EXPIRATION_CUTOFF_SEC) {
+                        expiration_time_sec + SECONDS_PER_YEAR
+                    } else {
+                        expiration_time_sec
+                    }
+                };
 
             // Mint token in v2
             // Names past the cutoff date will end up with a negative
             // registration duration. The following logic ensures that duration
             // is >= 1
-            let registration_duration_secs = if (new_expiration_time_sec > now)
-            {
-                new_expiration_time_sec - now
-            } else {
-                // Must be non-zero so that the name is not considered expired
-                1
-            };
+            let registration_duration_secs =
+                if (new_expiration_time_sec > now) {
+                    new_expiration_time_sec - now
+                } else {
+                    // Must be non-zero so that the name is not considered expired
+                    1
+                };
             v2_1_domains::register_name_with_router(
                 router_signer,
                 user,
                 domain_name,
                 subdomain_name,
-                registration_duration_secs,
+                registration_duration_secs
             );
 
             // If the name was a primary name, carry it over (`target_addr` gets automatically carried over too)
@@ -470,9 +491,7 @@ module router::router {
 
     /// @notice Renews the domain. NOTE 1: Not available in MODE_V1. NOTE 2: Will attempt to migrate the domain. For subdomains, the call may fail unless `migrate_name` is called directly on the subdomain first
     public entry fun renew_domain(
-        user: &signer,
-        domain_name: String,
-        renewal_duration_secs: u64,
+        user: &signer, domain_name: String, renewal_duration_secs: u64
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -487,17 +506,16 @@ module router::router {
     }
 
     fun migrate_if_eligible(
-        user: &signer,
-        domain_name: String,
-        subdomain_name: Option<String>,
+        user: &signer, domain_name: String, subdomain_name: Option<String>
     ) acquires RouterConfig {
         // Migrate if the name is still in v1 and is a domain.
         // We do not migrate the subdomain because it might fail due to domain hasn't been migrated
-        if (!exists_in_v2(domain_name, subdomain_name) && is_v1_name_owner(
-            signer::address_of(user),
-            domain_name,
-            subdomain_name
-        )) {
+        if (!exists_in_v2(domain_name, subdomain_name)
+            && is_v1_name_owner(
+                signer::address_of(user),
+                domain_name,
+                subdomain_name
+            )) {
             if (option::is_none(&subdomain_name)) {
                 migrate_name(user, domain_name, subdomain_name);
             } else {
@@ -508,17 +526,21 @@ module router::router {
 
     // ==== REVERSE REGISTRATION ====
 
-    fun has_primary_name(
-        user: &signer,
-    ): bool acquires RouterConfig {
+    fun has_primary_name(user: &signer): bool acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
-            let reverse_lookup_result = domains::get_reverse_lookup(signer::address_of(user));
+            let reverse_lookup_result =
+                domains::get_reverse_lookup(signer::address_of(user));
             return (option::is_some(&reverse_lookup_result))
         } else if (mode == MODE_V1_AND_V2) {
             // Returns true if the user has a primary name in v1 or v2. We are essentially accepting that a v1 primary name is valid while in MODE_V1_AND_V2.
             // That said, as long as v1 is read-only and changes to v2 names will clear the v1 name, this is acceptable
-            return (option::is_some(&domains::get_reverse_lookup(signer::address_of(user))) || option::is_some(&v2_1_domains::get_reverse_lookup(signer::address_of(user))))
+            return (
+                option::is_some(&domains::get_reverse_lookup(signer::address_of(user)))
+                    || option::is_some(
+                        &v2_1_domains::get_reverse_lookup(signer::address_of(user))
+                    )
+            )
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
         }
@@ -526,16 +548,11 @@ module router::router {
 
     /// @notice Updates a user's primary name. NOTE: Will attempt to migrate the domain. For subdomains, the call may fail unless `migrate_name` is called directly on the subdomain first
     public entry fun set_primary_name(
-        user: &signer,
-        domain_name: String,
-        subdomain_name: Option<String>,
+        user: &signer, domain_name: String, subdomain_name: Option<String>
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
-            let record = domains::create_name_record_key_v1(
-                subdomain_name,
-                domain_name,
-            );
+            let record = domains::create_name_record_key_v1(subdomain_name, domain_name);
             domains::set_reverse_lookup(user, &record);
         } else if (mode == MODE_V1_AND_V2) {
             migrate_if_eligible(user, domain_name, subdomain_name);
@@ -545,11 +562,7 @@ module router::router {
             if (option::is_some(&v1_primary_domain_name)) {
                 domains::force_clear_reverse_lookup(get_router_signer(), user_addr);
             };
-            v2_1_domains::set_reverse_lookup(
-                user,
-                subdomain_name,
-                domain_name,
-            );
+            v2_1_domains::set_reverse_lookup(user, subdomain_name, domain_name);
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
         }
@@ -562,11 +575,16 @@ module router::router {
             domains::clear_reverse_lookup(user);
         } else if (mode == MODE_V1_AND_V2) {
             // Clear primary name in v1 if exists so we do not have primary name in both v1 and v2
-            let (v1_primary_subdomain_name, v1_primary_domain_name) = get_v1_primary_name(signer::address_of(user));
+            let (v1_primary_subdomain_name, v1_primary_domain_name) =
+                get_v1_primary_name(signer::address_of(user));
             if (option::is_some(&v1_primary_domain_name)) {
                 // If v1 primary name is a domain, migrate it to v2, this will automatically clear it as primary name in v1 and set again in v2
                 if (option::is_none(&v1_primary_subdomain_name)) {
-                    migrate_name(user, *option::borrow(&v1_primary_domain_name), v1_primary_subdomain_name);
+                    migrate_name(
+                        user,
+                        *option::borrow(&v1_primary_domain_name),
+                        v1_primary_subdomain_name
+                    );
                 } else {
                     // else v1 primary name is a subdomain, we only clear it but not migrate it, as migration could fail if its domain has not been migrated
                     domains::clear_reverse_lookup(user);
@@ -585,23 +603,15 @@ module router::router {
         user: &signer,
         domain_name: String,
         subdomain_name: Option<String>,
-        target_addr: address,
+        target_addr: address
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
-            domains::set_name_address(
-                user,
-                subdomain_name,
-                domain_name,
-                target_addr,
-            )
+            domains::set_name_address(user, subdomain_name, domain_name, target_addr)
         } else if (mode == MODE_V1_AND_V2) {
             migrate_if_eligible(user, domain_name, subdomain_name);
             v2_1_domains::set_target_address(
-                user,
-                domain_name,
-                subdomain_name,
-                target_addr,
+                user, domain_name, subdomain_name, target_addr
             )
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
@@ -610,29 +620,18 @@ module router::router {
 
     /// @notice Clear a name's target address. NOTE: Will attempt to migrate the domain. For subdomains, the call may fail unless `migrate_name` is called directly on the subdomain first
     public entry fun clear_target_addr(
-        user: &signer,
-        domain_name: String,
-        subdomain_name: Option<String>,
+        user: &signer, domain_name: String, subdomain_name: Option<String>
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
-            domains::clear_name_address(
-                user,
-                subdomain_name,
-                domain_name,
-            )
+            domains::clear_name_address(user, subdomain_name, domain_name)
         } else if (mode == MODE_V1_AND_V2) {
             migrate_if_eligible(user, domain_name, subdomain_name);
-            v2_1_domains::clear_target_address(
-                user,
-                subdomain_name,
-                domain_name,
-            )
+            v2_1_domains::clear_target_address(user, subdomain_name, domain_name)
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
         }
     }
-
 
     // ==== DOMAIN ADMIN ====
 
@@ -642,7 +641,7 @@ module router::router {
         domain_name: String,
         subdomain_name: String,
         to_addr: address,
-        target_addr: Option<address>,
+        target_addr: Option<address>
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -653,7 +652,7 @@ module router::router {
                 domain_name,
                 subdomain_name,
                 to_addr,
-                target_addr,
+                target_addr
             )
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
@@ -665,7 +664,7 @@ module router::router {
         domain_admin: &signer,
         domain_name: String,
         subdomain_name: String,
-        transferable: bool,
+        transferable: bool
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -688,7 +687,7 @@ module router::router {
         domain_admin: &signer,
         domain_name: String,
         subdomain_name: String,
-        expiration_policy: u8,
+        expiration_policy: u8
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -699,7 +698,7 @@ module router::router {
                 domain_admin,
                 domain_name,
                 subdomain_name,
-                expiration_policy,
+                expiration_policy
             )
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
@@ -711,7 +710,7 @@ module router::router {
         domain_admin: &signer,
         domain_name: String,
         subdomain_name: String,
-        expiration_time_sec: u64,
+        expiration_time_sec: u64
     ) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -722,7 +721,7 @@ module router::router {
                 domain_admin,
                 domain_name,
                 subdomain_name,
-                expiration_time_sec,
+                expiration_time_sec
             )
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
@@ -732,29 +731,29 @@ module router::router {
     // == ROUTER READ FUNCTIONS ==
 
     /// Returns true if the name is tracked in v2
-    inline fun exists_in_v2(domain_name: String, subdomain_name: Option<String>): bool {
+    inline fun exists_in_v2(
+        domain_name: String, subdomain_name: Option<String>
+    ): bool {
         object::is_object(v2_1_domains::get_token_addr(domain_name, subdomain_name))
     }
 
     inline fun get_v1_target_addr(
-        domain_name: String,
-        subdomain_name: Option<String>
+        domain_name: String, subdomain_name: Option<String>
     ): Option<address> {
-        if (!aptos_names::domains::name_is_registered(subdomain_name, domain_name)) {
+        if (!cedra_names::domains::name_is_registered(subdomain_name, domain_name)) {
             option::none()
         } else {
-            let (_property_version, _expiration_time_sec, target_addr) = aptos_names::domains::get_name_record_v1_props_for_name(
-                subdomain_name,
-                domain_name,
-            );
+            let (_property_version, _expiration_time_sec, target_addr) =
+                cedra_names::domains::get_name_record_v1_props_for_name(
+                    subdomain_name, domain_name
+                );
             target_addr
         }
     }
 
     #[view]
     public fun get_target_addr(
-        domain_name: String,
-        subdomain_name: Option<String>
+        domain_name: String, subdomain_name: Option<String>
     ): Option<address> acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -763,10 +762,8 @@ module router::router {
             if (!exists_in_v2(domain_name, subdomain_name)) {
                 get_v1_target_addr(domain_name, subdomain_name)
             } else {
-                let target_addr = v2_1_domains::get_target_address(
-                    domain_name,
-                    subdomain_name,
-                );
+                let target_addr =
+                    v2_1_domains::get_target_address(domain_name, subdomain_name);
                 target_addr
             }
         } else {
@@ -775,19 +772,16 @@ module router::router {
     }
 
     inline fun is_v1_name_owner(
-        owner_addr: address,
-        domain_name: String,
-        subdomain_name: Option<String>,
+        owner_addr: address, domain_name: String, subdomain_name: Option<String>
     ): bool {
-        let (is_owner, _token_id) = domains::is_token_owner(owner_addr, subdomain_name, domain_name);
+        let (is_owner, _token_id) =
+            domains::is_token_owner(owner_addr, subdomain_name, domain_name);
         is_owner && !domains::name_is_expired_past_grace(subdomain_name, domain_name)
     }
 
     #[view]
     public fun is_name_owner(
-        owner_addr: address,
-        domain_name: String,
-        subdomain_name: Option<String>,
+        owner_addr: address, domain_name: String, subdomain_name: Option<String>
     ): bool acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -796,10 +790,8 @@ module router::router {
             if (!exists_in_v2(domain_name, subdomain_name)) {
                 is_v1_name_owner(owner_addr, domain_name, subdomain_name)
             } else {
-                v2_1_domains::is_token_owner(owner_addr, domain_name, subdomain_name) && !v2_1_domains::is_name_expired(
-                    domain_name,
-                    subdomain_name
-                )
+                v2_1_domains::is_token_owner(owner_addr, domain_name, subdomain_name)
+                    && !v2_1_domains::is_name_expired(domain_name, subdomain_name)
             }
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
@@ -810,8 +802,7 @@ module router::router {
     /// Returns a name's owner address. Returns option::none() if there is no owner.
     /// Not available in MODE_v1
     public fun get_owner_addr(
-        domain_name: String,
-        subdomain_name: Option<String>,
+        domain_name: String, subdomain_name: Option<String>
     ): Option<address> acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -825,20 +816,16 @@ module router::router {
     }
 
     inline fun get_v1_expiration(
-        domain_name: String,
-        subdomain_name: Option<String>
+        domain_name: String, subdomain_name: Option<String>
     ): u64 {
-        let (_property_version, expiration_time_sec, _target_addr) = domains::get_name_record_v1_props_for_name(
-            subdomain_name,
-            domain_name,
-        );
+        let (_property_version, expiration_time_sec, _target_addr) =
+            domains::get_name_record_v1_props_for_name(subdomain_name, domain_name);
         expiration_time_sec
     }
 
     #[view]
     public fun get_expiration(
-        domain_name: String,
-        subdomain_name: Option<String>
+        domain_name: String, subdomain_name: Option<String>
     ): u64 acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -847,10 +834,8 @@ module router::router {
             if (!exists_in_v2(domain_name, subdomain_name)) {
                 get_v1_expiration(domain_name, subdomain_name)
             } else {
-                let expiration_time_sec = v2_1_domains::get_expiration(
-                    domain_name,
-                    subdomain_name,
-                );
+                let expiration_time_sec =
+                    v2_1_domains::get_expiration(domain_name, subdomain_name);
                 expiration_time_sec
             }
         } else {
@@ -861,8 +846,7 @@ module router::router {
     #[view]
     /// Not available in MODE_v1
     public fun get_subdomain_expiration_policy(
-        domain_name: String,
-        subdomain_name: String,
+        domain_name: String, subdomain_name: String
     ): u8 acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
@@ -875,23 +859,22 @@ module router::router {
         }
     }
 
-    inline fun get_v1_primary_name(
-        user_addr: address
-    ): (Option<String>, Option<String>) {
+    inline fun get_v1_primary_name(user_addr: address): (Option<String>, Option<String>) {
         let record = domains::get_reverse_lookup(user_addr);
         if (option::is_none(&record)) {
             (option::none(), option::none())
         } else {
-            let (subdomain_name, domain_name) = domains::get_name_record_key_v1_props(
-                option::borrow(&record)
-            );
+            let (subdomain_name, domain_name) =
+                domains::get_name_record_key_v1_props(option::borrow(&record));
             (subdomain_name, option::some(domain_name))
         }
     }
 
     #[view]
     /// @returns a tuple of (subdomain, domain). If user_addr has no primary name, two `option::none()` will be returned
-    public fun get_primary_name(user_addr: address): (Option<String>, Option<String>) acquires RouterConfig {
+    public fun get_primary_name(
+        user_addr: address
+    ): (Option<String>, Option<String>) acquires RouterConfig {
         let mode = get_mode();
         if (mode == MODE_V1) {
             get_v1_primary_name(user_addr)
@@ -903,9 +886,10 @@ module router::router {
                 if (option::is_none(&token_addr)) {
                     (option::none(), option::none())
                 } else {
-                    let (subdomain_name, domain_name) = v2_1_domains::get_name_props_from_token_addr(
-                        *option::borrow(&token_addr)
-                    );
+                    let (subdomain_name, domain_name) =
+                        v2_1_domains::get_name_props_from_token_addr(
+                            *option::borrow(&token_addr)
+                        );
                     (subdomain_name, option::some(domain_name))
                 }
             }
@@ -924,26 +908,16 @@ module router::router {
         let mode = get_mode();
         if (mode == MODE_V1) {
             // Get the v1 token info
-            let (
-                _property_version,
-                _expiration_time_sec,
-                _target_addr
-            ) = domains::get_name_record_v1_props_for_name(
-                subdomain_name,
-                domain_name,
-            );
-            let tokendata_id = aptos_names::token_helper::build_tokendata_id(
-                aptos_names::token_helper::get_token_signer_address(),
-                subdomain_name,
-                domain_name,
-            );
-            let token_id = aptos_names::token_helper::latest_token_id(&tokendata_id);
-            aptos_token::token::transfer(
-                user,
-                token_id,
-                to_addr,
-                1,
-            );
+            let (_property_version, _expiration_time_sec, _target_addr) =
+                domains::get_name_record_v1_props_for_name(subdomain_name, domain_name);
+            let tokendata_id =
+                cedra_names::token_helper::build_tokendata_id(
+                    cedra_names::token_helper::get_token_signer_address(),
+                    subdomain_name,
+                    domain_name
+                );
+            let token_id = cedra_names::token_helper::latest_token_id(&tokendata_id);
+            cedra_token::token::transfer(user, token_id, to_addr, 1);
 
             // TODO: Probably good idea to clear entries in v1
         } else if (mode == MODE_V1_AND_V2) {
@@ -951,7 +925,7 @@ module router::router {
             object::transfer(
                 user,
                 object::address_to_object<v2_1_domains::NameRecord>(token_addr),
-                to_addr,
+                to_addr
             );
         } else {
             abort error::not_implemented(ENOT_IMPLEMENTED_IN_MODE)
@@ -965,3 +939,4 @@ module router::router {
         init_module(deployer);
     }
 }
+

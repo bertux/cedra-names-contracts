@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository implements the Aptos Name Service, a suite of Move smart contracts and scripts for managing domain names on the Aptos blockchain. The codebase is organized into modular directories for core logic, bulk operations, registration, distribution, and routing.
+This repository implements the Cedra Name Service, a suite of Move smart contracts and scripts for managing domain names on the Cedra blockchain. The codebase is organized into modular directories for core logic, bulk operations, registration, distribution, and routing.
 
 ## Architecture & Key Components
 
@@ -16,24 +16,24 @@ This repository implements the Aptos Name Service, a suite of Move smart contrac
 
 - **Unit Tests:** Run `./sh_scripts/move_tests.sh` to execute all unit tests.
 - **Deploy to Testnet:**
-  1. Run `aptos init` to set up a profile.
+  1. Run `cedra init` to set up a profile.
   2. Edit `sh_scripts/move_publish.sh` to set the target address/profile.
   3. Run `./sh_scripts/move_publish.sh` to deploy.
 - **Bulk Operations:**
   - Update the relevant `Move.toml` and script with target names/accounts.
-  - Compile: `aptos move compile`
-  - Run: `aptos move run-script --compiled-script-path <path> --profile <role>`
+  - Compile: `cedra move compile`
+  - Run: `cedra move run-script --compiled-script-path <path> --profile <role>`
 
 ## Conventions & Patterns
 
 - Each bulk operation script requires manual updates for target names/accounts and renewal periods.
 - Profiles (`admin`, `repository`, `name_owner`, `distributor`) are used for permissioned actions; ensure correct profile in scripts.
 - All scripts expect Move.toml to be updated with the correct repository address before running.
-- For direct token transfers, some scripts require opt-in: `aptos move run --function-id "0x3::token::opt_in_direct_transfer" --args bool:true --profile repository`
+- For direct token transfers, some scripts require opt-in: `cedra move run --function-id "0x3::token::opt_in_direct_transfer" --args bool:true --profile repository`
 
 ## Integration Points
 
-- Relies on the Aptos CLI for compilation, deployment, and script execution.
+- Relies on the Cedra CLI for compilation, deployment, and script execution.
 - External dependencies are managed via Move.toml in each module directory.
 
 ## Examples

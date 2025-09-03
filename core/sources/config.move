@@ -5,15 +5,15 @@ This includes things like the maximum number of years that a name can be registe
 Anyone can read, but only admins can write, as all write methods are gated via permissions checks
 */
 
-module aptos_names::config {
-    friend aptos_names::domains;
-    friend aptos_names::verify;
+module cedra_names::config {
+    friend cedra_names::domains;
+    friend cedra_names::verify;
 
-    use aptos_framework::account;
-    use aptos_framework::aptos_account;
-    use aptos_std::ed25519::{Self, UnvalidatedPublicKey};
-    use aptos_names::utf8_utils;
-    use aptos_token::property_map::{Self, PropertyMap};
+    use cedra_framework::account;
+    use cedra_framework::cedra_account;
+    use cedra_std::ed25519::{Self, UnvalidatedPublicKey};
+    use cedra_names::utf8_utils;
+    use cedra_token::property_map::{Self, PropertyMap};
     use std::error;
     use std::signer;
     use std::string::{Self, String};
@@ -40,7 +40,7 @@ module aptos_names::config {
     const DOMAIN_TYPE: vector<u8> = b"domain";
     const SUBDOMAIN_TYPE: vector<u8> = b"subdomain";
 
-    const COLLECTION_NAME_V1: vector<u8> = b"Aptos Names V1";
+    const COLLECTION_NAME_V1: vector<u8> = b"Cedra Names V1";
 
     /// Raised if the signer is not authorized to perform an action
     const ENOT_AUTHORIZED: u64 = 1;
@@ -48,16 +48,16 @@ module aptos_names::config {
     const EINVALID_VALUE: u64 = 2;
 
     struct ConfigurationV1 has key, store {
-        config: PropertyMap,
+        config: PropertyMap
     }
 
-    public(friend) fun initialize_v1(framework: &signer, admin_address: address, fund_destination_address: address) acquires ConfigurationV1 {
-        move_to(framework, ConfigurationV1 {
-            config: property_map::empty(),
-        });
+    public(friend) fun initialize_v1(
+        framework: &signer, admin_address: address, fund_destination_address: address
+    ) acquires ConfigurationV1 {
+        move_to(framework, ConfigurationV1 { config: property_map::empty() });
 
         // Temporarily set this to framework to allow other methods below to be set with framework signer
-        set_v1(@aptos_names, config_key_admin_address(), &signer::address_of(framework));
+        set_v1(@cedra_names, config_key_admin_address(), &signer::address_of(framework));
 
         set_is_enabled(framework, true);
 
@@ -66,8 +66,15 @@ module aptos_names::config {
         set_max_domain_length(framework, 63);
 
         // TODO: SET THIS TO SOMETHING REAL
-        set_tokendata_description(framework, string::utf8(b"This is an official Aptos Labs Name Service Name"));
-        set_tokendata_url_prefix(framework, string::utf8(b"https://www.aptosnames.com/api/mainnet/v1/metadata/"));
+        set_tokendata_description(
+            framework, string::utf8(b"This is an official Cedra Labs Name Service Name")
+        );
+        set_tokendata_url_prefix(
+            framework,
+            string::utf8(
+                b"https://www.cedranames.me/api/testnet/v1/metadata/"
+            )
+        );
 
         // 0.2 APT
         set_subdomain_price(framework, octas() / 5);
@@ -77,15 +84,19 @@ module aptos_names::config {
         set_domain_price_for_length(framework, (5 * octas()), 6);
 
         // TODO: SET REAL VALUES FOR PUBLIC KEY AND UNRESTRICTED MINT ENABLED
-        let public_key = x"667a0687c3e7fc831366372667c11e4aa4502be09e7c99a5303711ce4f0b0fe2";
+        let public_key =
+            x"667a0687c3e7fc831366372667c11e4aa4502be09e7c99a5303711ce4f0b0fe2";
         set_captcha_public_key(framework, public_key);
         set_unrestricted_mint_enabled(framework, true);
 
         // We set it directly here to allow boostrapping the other values
-        set_v1(@aptos_names, config_key_fund_destination_address(), &fund_destination_address);
-        set_v1(@aptos_names, config_key_admin_address(), &admin_address);
+        set_v1(
+            @cedra_names,
+            config_key_fund_destination_address(),
+            &fund_destination_address
+        );
+        set_v1(@cedra_names, config_key_admin_address(), &admin_address);
     }
-
 
     //
     // Configuration Shortcuts
@@ -97,39 +108,41 @@ module aptos_names::config {
 
     // !!!!! DEPRECATED !!!!! please use is_enabled_for_nonadmin()
     public fun is_enabled(): bool acquires ConfigurationV1 {
-        read_bool_v1(@aptos_names, &config_key_enabled())
+        read_bool_v1(@cedra_names, &config_key_enabled())
     }
 
     // Returns true if enabled flag is true or signer is admin
     public fun is_enabled_for_nonadmin(sign: &signer): bool acquires ConfigurationV1 {
-        read_bool_v1(@aptos_names, &config_key_enabled()) || signer_is_admin(sign)
+        read_bool_v1(@cedra_names, &config_key_enabled()) || signer_is_admin(sign)
     }
 
     public fun fund_destination_address(): address acquires ConfigurationV1 {
-        read_address_v1(@aptos_names, &config_key_fund_destination_address())
+        read_address_v1(@cedra_names, &config_key_fund_destination_address())
     }
 
     public fun admin_address(): address acquires ConfigurationV1 {
-        read_address_v1(@aptos_names, &config_key_admin_address())
+        read_address_v1(@cedra_names, &config_key_admin_address())
     }
 
     public fun max_number_of_years_registered(): u8 acquires ConfigurationV1 {
-        read_u8_v1(@aptos_names, &config_key_max_number_of_years_registered())
+        read_u8_v1(@cedra_names, &config_key_max_number_of_years_registered())
     }
 
     public fun max_domain_length(): u64 acquires ConfigurationV1 {
-        read_u64_v1(@aptos_names, &config_key_max_domain_length())
+        read_u64_v1(@cedra_names, &config_key_max_domain_length())
     }
 
     public fun min_domain_length(): u64 acquires ConfigurationV1 {
-        read_u64_v1(@aptos_names, &config_key_min_domain_length())
+        read_u64_v1(@cedra_names, &config_key_min_domain_length())
     }
 
     /// Admins will be able to intervene when necessary.
     /// The account will be used to manage names that are being used in a way that is harmful to others.
     /// Alternatively, the deployer can be used to perform admin actions.
     public fun signer_is_admin(sign: &signer): bool acquires ConfigurationV1 {
-        signer::address_of(sign) == admin_address() || signer::address_of(sign) == @aptos_names || signer::address_of(sign) == @router_signer
+        signer::address_of(sign) == admin_address()
+            || signer::address_of(sign) == @cedra_names
+            || signer::address_of(sign) == @router_signer
     }
 
     public fun assert_signer_is_admin(sign: &signer) acquires ConfigurationV1 {
@@ -137,11 +150,11 @@ module aptos_names::config {
     }
 
     public fun tokendata_description(): String acquires ConfigurationV1 {
-        read_string_v1(@aptos_names, &config_key_tokendata_description())
+        read_string_v1(@cedra_names, &config_key_tokendata_description())
     }
 
     public fun tokendata_url_prefix(): String acquires ConfigurationV1 {
-        read_string_v1(@aptos_names, &config_key_tokendata_url_prefix())
+        read_string_v1(@cedra_names, &config_key_tokendata_url_prefix())
     }
 
     public fun domain_type(): String {
@@ -157,27 +170,30 @@ module aptos_names::config {
     }
 
     public fun domain_price_for_length(domain_length: u64): u64 acquires ConfigurationV1 {
-        read_u64_v1(@aptos_names, &config_key_domain_price(domain_length))
+        read_u64_v1(@cedra_names, &config_key_domain_price(domain_length))
     }
 
     public fun subdomain_price(): u64 acquires ConfigurationV1 {
-        read_u64_v1(@aptos_names, &config_key_subdomain_price())
+        read_u64_v1(@cedra_names, &config_key_subdomain_price())
     }
 
     public fun captcha_public_key(): UnvalidatedPublicKey acquires ConfigurationV1 {
-        read_unvalidated_public_key(@aptos_names, &config_key_captcha_public_key())
+        read_unvalidated_public_key(@cedra_names, &config_key_captcha_public_key())
     }
 
     public fun unrestricted_mint_enabled(): bool acquires ConfigurationV1 {
-        read_bool_v1(@aptos_names, &config_key_unrestricted_mint_enabled())
+        read_bool_v1(@cedra_names, &config_key_unrestricted_mint_enabled())
     }
 
     #[view]
     public fun reregistration_grace_sec(): u64 acquires ConfigurationV1 {
         let key = config_key_reregistration_grace_sec();
-        let key_exists = property_map::contains_key(&borrow_global<ConfigurationV1>(@aptos_names).config, &key);
+        let key_exists =
+            property_map::contains_key(
+                &borrow_global<ConfigurationV1>(@cedra_names).config, &key
+            );
         if (key_exists) {
-            read_u64_v1(@aptos_names, &key)
+            read_u64_v1(@cedra_names, &key)
         } else {
             // Default to 0 if key DNE
             0
@@ -190,77 +206,113 @@ module aptos_names::config {
 
     public entry fun set_is_enabled(sign: &signer, enabled: bool) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
-        set_v1(@aptos_names, config_key_enabled(), &enabled)
+        set_v1(@cedra_names, config_key_enabled(), &enabled)
     }
 
-    public entry fun set_fund_destination_address(sign: &signer, addr: address) acquires ConfigurationV1 {
+    public entry fun set_fund_destination_address(
+        sign: &signer, addr: address
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
-        aptos_account::assert_account_is_registered_for_apt(addr);
+        cedra_account::assert_account_is_registered_for_apt(addr);
 
-        set_v1(@aptos_names, config_key_fund_destination_address(), &addr)
+        set_v1(@cedra_names, config_key_fund_destination_address(), &addr)
     }
 
     public entry fun set_admin_address(sign: &signer, addr: address) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
         assert!(account::exists_at(addr), error::invalid_argument(EINVALID_VALUE));
-        set_v1(@aptos_names, config_key_admin_address(), &addr)
+        set_v1(@cedra_names, config_key_admin_address(), &addr)
     }
 
-    public entry fun set_max_number_of_years_registered(sign: &signer, max_years_registered: u8) acquires ConfigurationV1 {
+    public entry fun set_max_number_of_years_registered(
+        sign: &signer, max_years_registered: u8
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
         assert!(max_years_registered > 0, error::invalid_argument(EINVALID_VALUE));
-        set_v1(@aptos_names, config_key_max_number_of_years_registered(), &max_years_registered)
+        set_v1(
+            @cedra_names,
+            config_key_max_number_of_years_registered(),
+            &max_years_registered
+        )
     }
 
-    public entry fun set_max_domain_length(sign: &signer, domain_length: u64) acquires ConfigurationV1 {
+    public entry fun set_max_domain_length(
+        sign: &signer, domain_length: u64
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
         assert!(domain_length > 0, error::invalid_argument(EINVALID_VALUE));
-        set_v1(@aptos_names, config_key_max_domain_length(), &domain_length)
+        set_v1(@cedra_names, config_key_max_domain_length(), &domain_length)
     }
 
-    public entry fun set_min_domain_length(sign: &signer, domain_length: u64) acquires ConfigurationV1 {
+    public entry fun set_min_domain_length(
+        sign: &signer, domain_length: u64
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
         assert!(domain_length > 0, error::invalid_argument(EINVALID_VALUE));
-        set_v1(@aptos_names, config_key_min_domain_length(), &domain_length)
+        set_v1(@cedra_names, config_key_min_domain_length(), &domain_length)
     }
 
-    public entry fun set_tokendata_description(sign: &signer, description: String) acquires ConfigurationV1 {
+    public entry fun set_tokendata_description(
+        sign: &signer, description: String
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
-        set_v1(@aptos_names, config_key_tokendata_description(), &description)
+        set_v1(@cedra_names, config_key_tokendata_description(), &description)
     }
 
-    public entry fun set_tokendata_url_prefix(sign: &signer, description: String) acquires ConfigurationV1 {
+    public entry fun set_tokendata_url_prefix(
+        sign: &signer, description: String
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
-        set_v1(@aptos_names, config_key_tokendata_url_prefix(), &description)
+        set_v1(@cedra_names, config_key_tokendata_url_prefix(), &description)
     }
 
     public entry fun set_subdomain_price(sign: &signer, price: u64) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
-        set_v1(@aptos_names, config_key_subdomain_price(), &price)
+        set_v1(@cedra_names, config_key_subdomain_price(), &price)
     }
 
-    public entry fun set_domain_price_for_length(sign: &signer, price: u64, length: u64) acquires ConfigurationV1 {
+    public entry fun set_domain_price_for_length(
+        sign: &signer, price: u64, length: u64
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
         assert!(price > 0, error::invalid_argument(EINVALID_VALUE));
         assert!(length > 0, error::invalid_argument(EINVALID_VALUE));
-        set_v1(@aptos_names, config_key_domain_price(length), &price)
+        set_v1(@cedra_names, config_key_domain_price(length), &price)
     }
 
-    public entry fun set_captcha_public_key(sign: &signer, public_key: vector<u8>) acquires ConfigurationV1 {
+    public entry fun set_captcha_public_key(
+        sign: &signer, public_key: vector<u8>
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
-        set_v1(@aptos_names, config_key_captcha_public_key(), &ed25519::new_unvalidated_public_key_from_bytes(public_key));
+        set_v1(
+            @cedra_names,
+            config_key_captcha_public_key(),
+            &ed25519::new_unvalidated_public_key_from_bytes(public_key)
+        );
     }
 
     // set if we want to allow users to bypass signature verification
     // when unrestricted_mint_enabled == false, signature verification is required for registering a domain
-    public entry fun set_unrestricted_mint_enabled(sign: &signer, unrestricted_mint_enabled: bool) acquires ConfigurationV1 {
+    public entry fun set_unrestricted_mint_enabled(
+        sign: &signer, unrestricted_mint_enabled: bool
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
-        set_v1(@aptos_names, config_key_unrestricted_mint_enabled(), &unrestricted_mint_enabled);
+        set_v1(
+            @cedra_names,
+            config_key_unrestricted_mint_enabled(),
+            &unrestricted_mint_enabled
+        );
     }
 
-    public entry fun set_reregistration_grace_sec(sign: &signer, reregistration_grace_sec: u64) acquires ConfigurationV1 {
+    public entry fun set_reregistration_grace_sec(
+        sign: &signer, reregistration_grace_sec: u64
+    ) acquires ConfigurationV1 {
         assert_signer_is_admin(sign);
-        set_v1(@aptos_names, config_key_reregistration_grace_sec(), &reregistration_grace_sec);
+        set_v1(
+            @cedra_names,
+            config_key_reregistration_grace_sec(),
+            &reregistration_grace_sec
+        );
     }
 
     //
@@ -367,8 +419,13 @@ module aptos_names::config {
         property_map::read_bool(&borrow_global<ConfigurationV1>(addr).config, key)
     }
 
-    public fun read_unvalidated_public_key(addr: address, key: &String): UnvalidatedPublicKey acquires ConfigurationV1 {
-        let value = property_map::borrow_value(property_map::borrow(&borrow_global<ConfigurationV1>(addr).config, key));
+    public fun read_unvalidated_public_key(
+        addr: address, key: &String
+    ): UnvalidatedPublicKey acquires ConfigurationV1 {
+        let value =
+            property_map::borrow_value(
+                property_map::borrow(&borrow_global<ConfigurationV1>(addr).config, key)
+            );
         // remove the length of this vector recorded at index 0
         vector::remove(&mut value, 0);
         ed25519::new_unvalidated_public_key_from_bytes(value)
@@ -379,46 +436,47 @@ module aptos_names::config {
     //
 
     #[test_only]
-    friend aptos_names::price_model;
+    friend cedra_names::price_model;
     #[test_only]
-    use aptos_framework::coin;
+    use cedra_framework::coin;
     #[test_only]
-    use aptos_framework::aptos_coin::AptosCoin;
+    use cedra_framework::cedra_coin::CedraCoin;
     #[test_only]
-    use aptos_framework::timestamp;
+    use cedra_framework::timestamp;
 
     #[test_only]
-    public fun initialize_aptoscoin_for(framework: &signer) {
-        let (burn_cap, mint_cap) = aptos_framework::aptos_coin::initialize_for_test(framework);
-        coin::register<AptosCoin>(framework);
+    public fun initialize_cedracoin_for(framework: &signer) {
+        let (burn_cap, mint_cap) =
+            cedra_framework::cedra_coin::initialize_for_test(framework);
+        coin::register<CedraCoin>(framework);
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
     }
 
     #[test_only]
     public fun set_fund_destination_address_test_only(addr: address) acquires ConfigurationV1 {
-        set_v1(@aptos_names, config_key_fund_destination_address(), &addr)
+        set_v1(@cedra_names, config_key_fund_destination_address(), &addr)
     }
 
     #[test_only]
     public fun set_admin_address_test_only(addr: address) acquires ConfigurationV1 {
-        set_v1(@aptos_names, config_key_admin_address(), &addr)
+        set_v1(@cedra_names, config_key_admin_address(), &addr)
     }
 
     #[test_only]
-    public fun initialize_for_test(aptos_names: &signer, aptos: &signer) acquires ConfigurationV1 {
-        timestamp::set_time_has_started_for_testing(aptos);
-        initialize_aptoscoin_for(aptos);
-        initialize_v1(aptos_names, @aptos_names, @aptos_names);
-        set_admin_address_test_only(signer::address_of(aptos_names));
+    public fun initialize_for_test(cedra_names: &signer, cedra: &signer) acquires ConfigurationV1 {
+        timestamp::set_time_has_started_for_testing(cedra);
+        initialize_cedracoin_for(cedra);
+        initialize_v1(cedra_names, @cedra_names, @cedra_names);
+        set_admin_address_test_only(signer::address_of(cedra_names));
     }
 
-    #[test(myself = @aptos_names)]
+    #[test(myself = @cedra_names)]
     fun test_default_token_configs_are_set(myself: signer) acquires ConfigurationV1 {
         account::create_account_for_test(signer::address_of(&myself));
 
-        initialize_v1(&myself, @aptos_names, @aptos_names);
-        set_v1(@aptos_names, config_key_admin_address(), &@aptos_names);
+        initialize_v1(&myself, @cedra_names, @cedra_names);
+        set_v1(@cedra_names, config_key_admin_address(), &@cedra_names);
 
         set_tokendata_description(&myself, string::utf8(b"test description"));
         assert!(tokendata_description() == string::utf8(b"test description"), 1);
@@ -427,12 +485,12 @@ module aptos_names::config {
         assert!(tokendata_url_prefix() == string::utf8(b"test_prefix"), 1);
     }
 
-    #[test(myself = @aptos_names)]
+    #[test(myself = @cedra_names)]
     fun test_default_tokens_configs_are_set(myself: signer) acquires ConfigurationV1 {
         account::create_account_for_test(signer::address_of(&myself));
 
-        initialize_v1(&myself, @aptos_names, @aptos_names);
-        set_v1(@aptos_names, config_key_admin_address(), &@aptos_names);
+        initialize_v1(&myself, @cedra_names, @cedra_names);
+        set_v1(@cedra_names, config_key_admin_address(), &@cedra_names);
 
         set_tokendata_description(&myself, string::utf8(b"test description"));
         assert!(tokendata_description() == string::utf8(b"test description"), 1);
@@ -441,15 +499,17 @@ module aptos_names::config {
         set_tokendata_description(&myself, string::utf8(b"test_desc"));
     }
 
-    #[test(myself = @aptos_names, rando = @0x266f, aptos = @0x1)]
-    fun test_configs_are_set(myself: &signer, rando: &signer, aptos: &signer) acquires ConfigurationV1 {
+    #[test(myself = @cedra_names, rando = @0x266f, cedra = @0x1)]
+    fun test_configs_are_set(
+        myself: &signer, rando: &signer, cedra: &signer
+    ) acquires ConfigurationV1 {
         account::create_account_for_test(signer::address_of(myself));
         account::create_account_for_test(signer::address_of(rando));
-        account::create_account_for_test(signer::address_of(aptos));
+        account::create_account_for_test(signer::address_of(cedra));
 
         // initializes coin, which is required for transfers
-        initialize_for_test(myself, aptos);
-        coin::register<AptosCoin>(myself);
+        initialize_for_test(myself, cedra);
+        coin::register<CedraCoin>(myself);
 
         assert!(is_enabled(), 0);
         assert!(is_enabled_for_nonadmin(myself), 0);
@@ -466,7 +526,7 @@ module aptos_names::config {
         assert!(max_number_of_years_registered() == 5, 4);
 
         assert!(fund_destination_address() == signer::address_of(myself), 5);
-        coin::register<AptosCoin>(rando);
+        coin::register<CedraCoin>(rando);
         set_fund_destination_address(myself, signer::address_of(rando));
         assert!(fund_destination_address() == signer::address_of(rando), 5);
 
@@ -475,51 +535,59 @@ module aptos_names::config {
         assert!(admin_address() == signer::address_of(rando), 6);
     }
 
-
-    #[test(myself = @aptos_names, rando = @0x266f, aptos = @0x1)]
-    #[expected_failure(abort_code = 100, location = aptos_names::config)]
-    fun test_cant_set_foundation_address_without_coin(myself: &signer, rando: &signer, aptos: &signer) acquires ConfigurationV1 {
+    #[test(myself = @cedra_names, rando = @0x266f, cedra = @0x1)]
+    #[expected_failure(abort_code = 100, location = cedra_names::config)]
+    fun test_cant_set_foundation_address_without_coin(
+        myself: &signer, rando: &signer, cedra: &signer
+    ) acquires ConfigurationV1 {
         account::create_account_for_test(signer::address_of(myself));
         account::create_account_for_test(signer::address_of(rando));
-        account::create_account_for_test(signer::address_of(aptos));
+        account::create_account_for_test(signer::address_of(cedra));
 
-    // initializes coin, which is required for transfers
-    initialize_for_test(myself, aptos);
-    coin::register<AptosCoin>(myself);
-    // DO NOT register coin for rando, to trigger the expected failure
-    // TODO: fix initialization of rando to make this assertion pass
-    // Explicitly assert rando is NOT registered for AptosCoin
-    assert!(!coin::is_account_registered<AptosCoin>(signer::address_of(rando)), 100);
+        // initializes coin, which is required for transfers
+        initialize_for_test(myself, cedra);
+        coin::register<CedraCoin>(myself);
+        // DO NOT register coin for rando, to trigger the expected failure
+        // TODO: fix initialization of rando to make this assertion pass
+        // Explicitly assert rando is NOT registered for CedraCoin
+        assert!(
+            !coin::is_account_registered<CedraCoin>(signer::address_of(rando)),
+            100
+        );
 
-    assert!(fund_destination_address() == signer::address_of(myself), 5);
-    set_fund_destination_address(myself, signer::address_of(rando));
-    // The line below should not be reached if the abort occurs as expected
-    // assert!(fund_destination_address() == signer::address_of(rando), 5);
+        assert!(fund_destination_address() == signer::address_of(myself), 5);
+        set_fund_destination_address(myself, signer::address_of(rando));
+        // The line below should not be reached if the abort occurs as expected
+        // assert!(fund_destination_address() == signer::address_of(rando), 5);
     }
 
-    #[test(myself = @aptos_names, rando = @0x266f, aptos = @0x1)]
-    #[expected_failure(abort_code = 327681, location = aptos_names::config)]
-    fun test_foundation_config_requires_admin(myself: &signer, rando: &signer, aptos: &signer) acquires ConfigurationV1 {
+    #[test(myself = @cedra_names, rando = @0x266f, cedra = @0x1)]
+    #[expected_failure(abort_code = 327681, location = cedra_names::config)]
+    fun test_foundation_config_requires_admin(
+        myself: &signer, rando: &signer, cedra: &signer
+    ) acquires ConfigurationV1 {
         account::create_account_for_test(signer::address_of(myself));
         account::create_account_for_test(signer::address_of(rando));
-        account::create_account_for_test(signer::address_of(aptos));
+        account::create_account_for_test(signer::address_of(cedra));
 
-        initialize_for_test(myself, aptos);
-        coin::register<AptosCoin>(myself);
+        initialize_for_test(myself, cedra);
+        coin::register<CedraCoin>(myself);
 
         assert!(fund_destination_address() == signer::address_of(myself), 5);
         set_fund_destination_address(rando, signer::address_of(rando));
     }
 
-    #[test(myself = @aptos_names, rando = @0x266f, aptos = @0x1)]
-    #[expected_failure(abort_code = 327681, location = aptos_names::config)]
-    fun test_admin_config_requires_admin(myself: &signer, rando: &signer, aptos: &signer) acquires ConfigurationV1 {
+    #[test(myself = @cedra_names, rando = @0x266f, cedra = @0x1)]
+    #[expected_failure(abort_code = 327681, location = cedra_names::config)]
+    fun test_admin_config_requires_admin(
+        myself: &signer, rando: &signer, cedra: &signer
+    ) acquires ConfigurationV1 {
         account::create_account_for_test(signer::address_of(myself));
         account::create_account_for_test(signer::address_of(rando));
-        account::create_account_for_test(signer::address_of(aptos));
+        account::create_account_for_test(signer::address_of(cedra));
 
-        initialize_for_test(myself, aptos);
-        coin::register<AptosCoin>(myself);
+        initialize_for_test(myself, cedra);
+        coin::register<CedraCoin>(myself);
 
         assert!(admin_address() == signer::address_of(myself), 6);
         assert!(admin_address() != signer::address_of(rando), 7);
@@ -527,3 +595,4 @@ module aptos_names::config {
         set_admin_address(rando, signer::address_of(rando));
     }
 }
+

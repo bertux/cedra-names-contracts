@@ -11,26 +11,26 @@ ADMIN="_"
 FUNDS="_"
 ROUTER="_"
 
-ROUTER_SIGNER=0x$(aptos account derive-resource-account-address \
+ROUTER_SIGNER=0x$(cedra account derive-resource-account-address \
   --address $ROUTER \
-  --seed "ANS ROUTER" \
+  --seed "CNS ROUTER" \
   --seed-encoding utf8 | \
   grep "Result" | \
   sed -n 's/.*"Result": "\([^"]*\)".*/\1/p')
 
-aptos move publish \
+cedra move publish \
   --profile core \
   --package-dir core \
-  --named-addresses aptos_names=$APTOS_NAMES,aptos_names_admin=$ADMIN,aptos_names_funds=$FUNDS,router_signer=$ROUTER_SIGNER
-aptos move publish \
+  --named-addresses cedra_names=$APTOS_NAMES,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router_signer=$ROUTER_SIGNER
+cedra move publish \
   --profile core_v2 \
   --package-dir core_v2 \
-  --named-addresses aptos_names=$APTOS_NAMES,aptos_names_v2_1=$APTOS_NAMES_V2_1,aptos_names_admin=$ADMIN,aptos_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER
-aptos move publish \
+  --named-addresses cedra_names=$APTOS_NAMES,cedra_names_v2_1=$APTOS_NAMES_V2_1,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER
+cedra move publish \
   --profile router \
   --package-dir router \
-  --named-addresses aptos_names=$APTOS_NAMES,aptos_names_v2_1=$APTOS_NAMES_V2_1,aptos_names_admin=$ADMIN,aptos_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER
-aptos move publish \
+  --named-addresses cedra_names=$APTOS_NAMES,cedra_names_v2_1=$APTOS_NAMES_V2_1,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER
+cedra move publish \
   --profile bulk \
   --package-dir bulk \
-  --named-addresses aptos_names=$APTOS_NAMES,aptos_names_v2_1=$APTOS_NAMES_V2_1,aptos_names_admin=$ADMIN,aptos_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER,bulk=$BULK
+  --named-addresses cedra_names=$APTOS_NAMES,cedra_names_v2_1=$APTOS_NAMES_V2_1,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER,bulk=$BULK

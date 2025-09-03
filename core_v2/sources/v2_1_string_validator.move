@@ -1,7 +1,7 @@
-module aptos_names_v2_1::v2_1_string_validator {
-    friend aptos_names_v2_1::v2_1_domains;
-    friend aptos_names_v2_1::v2_1_token_helper;
-    friend aptos_names_v2_1::v2_1_config;
+module cedra_names_v2_1::v2_1_string_validator {
+    friend cedra_names_v2_1::v2_1_domains;
+    friend cedra_names_v2_1::v2_1_token_helper;
+    friend cedra_names_v2_1::v2_1_config;
     use std::string::{Self, String};
     use std::vector;
 
@@ -97,7 +97,10 @@ module aptos_names_v2_1::v2_1_string_validator {
                 let char2 = (*vector::borrow(bytes, i + 1) as u64);
                 let char3 = (*vector::borrow(bytes, i + 2) as u64);
                 let char4 = (*vector::borrow(bytes, i + 3) as u64);
-                vector::push_back(&mut result, (char1 << 24) | (char2 << 16) | (char3 << 8) | char4);
+                vector::push_back(
+                    &mut result,
+                    (char1 << 24) | (char2 << 16) | (char3 << 8) | char4
+                );
                 i = i + 3;
             } else {
                 assert!(char1 <= 14u8, EINVALID_UTF8_START);
@@ -124,16 +127,16 @@ module aptos_names_v2_1::v2_1_string_validator {
     #[test_only]
     struct Example has copy, drop {
         text: vector<u8>,
-        length: u64,
+        length: u64
     }
 
     #[test]
     fun test_latin_digits() {
         let allowed_tests: vector<Example> = vector[
-            Example { text: b"01234-56789", length: 11, },
-            Example { text: b"abcdefgh-ijklmnopqrstuvwxyz", length: 27, },
-            Example { text: b"a", length: 1, },
-            Example { text: b"", length: 0, },
+            Example { text: b"01234-56789", length: 11 },
+            Example { text: b"abcdefgh-ijklmnopqrstuvwxyz", length: 27 },
+            Example { text: b"a", length: 1 },
+            Example { text: b"", length: 0 }
         ];
         // Reverse it so the errors are in order
         vector::reverse(&mut allowed_tests);
@@ -149,13 +152,13 @@ module aptos_names_v2_1::v2_1_string_validator {
 
         // The char_counts here should only count up to the first invalid character
         let not_allowed: vector<Example> = vector[
-            Example { text: b"a_a", length: 3, },
-            Example { text: b"-aaa", length: 4, },
-            Example { text: b"aaa_", length: 4, },
-            Example { text: b"-", length: 1, },
-            Example { text: b"_", length: 1, },
-            Example { text: b"a!b", length: 3, },
-            Example { text: b"A", length: 1, },
+            Example { text: b"a_a", length: 3 },
+            Example { text: b"-aaa", length: 4 },
+            Example { text: b"aaa_", length: 4 },
+            Example { text: b"-", length: 1 },
+            Example { text: b"_", length: 1 },
+            Example { text: b"a!b", length: 3 },
+            Example { text: b"A", length: 1 }
         ];
         // Reverse it so the errors are in order
         vector::reverse(&mut not_allowed);
@@ -193,3 +196,4 @@ module aptos_names_v2_1::v2_1_string_validator {
         assert!(res4 == vector[4036989590], vector::pop_back(&mut res4));
     }
 }
+
