@@ -17,11 +17,11 @@ module cedra_names::test_helper {
     use std::vector;
 
     // Ammount to mint to test accounts during the e2e tests
-    const MINT_AMOUNT_APT: u64 = 500;
+    const MINT_AMOUNT_CED: u64 = 500;
 
-    // 500 APT
+    // 500 CED
     public fun mint_amount(): u64 {
-        MINT_AMOUNT_APT * config::octas()
+        MINT_AMOUNT_CED * config::octas()
     }
 
     public fun domain_name(): String {

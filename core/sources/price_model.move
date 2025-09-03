@@ -96,7 +96,7 @@ module cedra_names::price_model {
         use cedra_framework::account;
         use std::signer;
         use std::vector;
-        // If the price is 100 APT, for 1 year, the price should be 100 APT, etc
+        // If the price is 100 CED, for 1 year, the price should be 100 CED, etc
         let prices_and_years = vector[
             YearPricePair { years: 1, expected_price: 100 },
             YearPricePair { years: 2, expected_price: 210 },

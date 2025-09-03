@@ -76,7 +76,7 @@ module cedra_names::config {
             )
         );
 
-        // 0.2 APT
+        // 0.2 CED
         set_subdomain_price(framework, octas() / 5);
         set_domain_price_for_length(framework, (80 * octas()), 3);
         set_domain_price_for_length(framework, (40 * octas()), 4);

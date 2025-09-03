@@ -100,7 +100,7 @@ module cedra_names::domain_e2e_tests {
               yarn ts-node --compilerOptions '{"target": "es6", "module": "commonjs", "esModuleInterop": true}'  ./scripts/generateKeys.ts
 
             let proof_struct = RegisterDomainProofChallenge {
-                account_address: AccountAddress::from_hex_literal(APTOS_NAMES).unwrap(),
+                account_address: AccountAddress::from_hex_literal(CEDRA_NAMES).unwrap(),
                 module_name: String::from("verify"),
                 struct_name: String::from("RegisterDomainProofChallenge"),
                 sequence_number: 0,

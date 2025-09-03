@@ -14,13 +14,13 @@ module cedra_names_v2_1::v2_1_test_helper {
     use std::vector;
 
     // Ammount to mint to test accounts during the e2e tests
-    const MINT_AMOUNT_APT: u64 = 500;
+    const MINT_AMOUNT_CED: u64 = 500;
     const SECONDS_PER_DAY: u64 = 60 * 60 * 24;
     const SECONDS_PER_YEAR: u64 = 60 * 60 * 24 * 365;
 
-    // 500 APT
+    // 500 CED
     public fun mint_amount(): u64 {
-        MINT_AMOUNT_APT * v2_1_config::octas()
+        MINT_AMOUNT_CED * v2_1_config::octas()
     }
 
     public fun domain_name(): String {

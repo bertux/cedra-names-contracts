@@ -4,12 +4,12 @@ set -e
 
 echo "##### Publishing packages #####"
 # Set these to the account address you want to deploy to.
-APTOS_NAMES="_"
-APTOS_NAMES_V2_1="_"
-BULK="_"
+CEDRA_NAMES="0x0393eef2a5ac3133411fa2186f05a0a0581bc3308b705ba6611c1f2665d1aba6"
+CEDRA_NAMES_V2_1="0x776ed04bef3386aa008f3a8336da6a7656445083cae1607ac4e414ca137e1404"
+BULK="0xe6ae7e9857d280efc03dfae0d8b634550aaa78ff0f7ab7fe11c388892537dd6b"
 ADMIN="_"
 FUNDS="_"
-ROUTER="_"
+ROUTER="0x42af4a362d88e59d132e9fe8394320cba03af99b81a8209a4767dd23f034eedc"
 
 ROUTER_SIGNER=0x$(cedra account derive-resource-account-address \
   --address $ROUTER \
@@ -21,16 +21,16 @@ ROUTER_SIGNER=0x$(cedra account derive-resource-account-address \
 cedra move publish \
   --profile core \
   --package-dir core \
-  --named-addresses cedra_names=$APTOS_NAMES,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router_signer=$ROUTER_SIGNER
+  --named-addresses cedra_names=$CEDRA_NAMES,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router_signer=$ROUTER_SIGNER
 cedra move publish \
   --profile core_v2 \
   --package-dir core_v2 \
-  --named-addresses cedra_names=$APTOS_NAMES,cedra_names_v2_1=$APTOS_NAMES_V2_1,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER
+  --named-addresses cedra_names=$CEDRA_NAMES,cedra_names_v2_1=$CEDRA_NAMES_V2_1,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER
 cedra move publish \
   --profile router \
   --package-dir router \
-  --named-addresses cedra_names=$APTOS_NAMES,cedra_names_v2_1=$APTOS_NAMES_V2_1,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER
+  --named-addresses cedra_names=$CEDRA_NAMES,cedra_names_v2_1=$CEDRA_NAMES_V2_1,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER
 cedra move publish \
   --profile bulk \
   --package-dir bulk \
-  --named-addresses cedra_names=$APTOS_NAMES,cedra_names_v2_1=$APTOS_NAMES_V2_1,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER,bulk=$BULK
+  --named-addresses cedra_names=$CEDRA_NAMES,cedra_names_v2_1=$CEDRA_NAMES_V2_1,cedra_names_admin=$ADMIN,cedra_names_funds=$FUNDS,router=$ROUTER,router_signer=$ROUTER_SIGNER,bulk=$BULK
