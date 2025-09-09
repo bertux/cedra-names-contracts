@@ -10,15 +10,15 @@ router_signer = "_"
 
 [dependencies.CedraFramework]
 git = 'https://github.com/cedra-labs/cedra-framework.git'
-rev = 'main'
+rev = 'testnet'
 subdir = 'cedra-framework'
 
 [dependencies.CedraToken]
 git = 'https://github.com/cedra-labs/cedra-framework.git'
-rev = 'main'
+rev = 'testnet'
 subdir = 'cedra-token'
 
 [dependencies.CedraTokenObjects]
 git = 'https://github.com/cedra-labs/cedra-framework.git'
-rev = 'main'
+rev = 'testnet'
 subdir = 'cedra-token-objects'
