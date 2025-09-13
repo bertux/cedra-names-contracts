@@ -16,16 +16,16 @@ local = "../core"
 local = "../core_v2"
 
 [dependencies.CedraFramework]
-git = 'https://github.com/cedra-labs/cedra-framework.git'
-rev = 'testnet'
-subdir = 'cedra-framework'
+git = 'https://github.com/cedra-labs/cedra-network.git'
+rev = 'devnet'
+subdir = 'cedra-move/framework/cedra-framework'
 
 [dependencies.CedraToken]
-git = 'https://github.com/cedra-labs/cedra-framework.git'
-rev = 'testnet'
-subdir = 'cedra-token'
+git = 'https://github.com/cedra-labs/cedra-network.git'
+rev = 'devnet'
+subdir = 'cedra-move/framework/cedra-token'
 
 [dependencies.CedraTokenObjects]
-git = 'https://github.com/cedra-labs/cedra-framework.git'
-rev = 'testnet'
-subdir = 'cedra-token-objects'
+git = 'https://github.com/cedra-labs/cedra-network.git'
+rev = 'devnet'
+subdir = 'cedra-move/framework/cedra-token-objects'
